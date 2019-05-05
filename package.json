@@ -10,7 +10,11 @@
     "type": "git",
     "url": "https://github.com/natcl/node-red-contrib-lfo.git"
   },
-  "keywords": ["node-red", "lfo", "oscillator"],
+  "keywords": [
+    "node-red",
+    "lfo",
+    "oscillator"
+  ],
   "node-red": {
     "nodes": {
       "lfo": "lfo/lfo.js"

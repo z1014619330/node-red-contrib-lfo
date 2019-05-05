@@ -1,54 +1,106 @@
 <script type="text/javascript">
-    RED.nodes.registerType('lfo-node',{
-        category: 'signals',
-        color: '#c0deed',
-        defaults: {
-            name: {value:""},
-            waveform: {value: "sine"},
-            frequency: {value: 1, validate:RED.validators.number()},
-            samplingrate: {value: 20, validate:RED.validators.number()}
-        },
-        inputs:1,
-        outputs:1,
-        icon: "serial.png",
-        label: function() {
-            return this.name||"lfo";
-        },
-        paletteLabel: "lfo",
-        oneditprepare: function () {
-            $( "#node-input-frequency" ).spinner({min:0});
-            $( "#node-input-samplingrate" ).spinner({min:1});
-        }
-    });
+ RED.nodes.registerType('lfo-node',{
+     category: 'signals',
+     color: '#c0deed',
+     defaults: {
+         name: {value:""},
+         waveform: {value: "sine"},
+         frequency: {value: 1, validate:RED.validators.number()},
+         samplingrate: {value: 20, validate:RED.validators.number()},
+         range: {value: "offsetamplitude"},
+         offset: {value: 0},
+         amplitude: {value: 1},
+         min: {value: -1},
+         max: {value: 1}
+     },
+     inputs:1,
+     outputs:1,
+     icon: "serial.png",
+     label: function() {
+         return this.name||"lfo";
+     },
+     paletteLabel: "lfo",
+     oneditprepare: function () {
+         node = this;
+         
+         $( "#node-input-frequency" ).spinner({min:0});
+         $( "#node-input-samplingrate" ).spinner({min:1});
+         $( "#node-input-offset" ).spinner();
+         $( "#node-input-amplitude" ).spinner({min:0});
+         $( "#node-input-min" ).spinner();
+         $( "#node-input-max" ).spinner();
+
+         function showRange(){
+             var range = this.value || node.range || "offsetamplitude";
+             $( "#node-input-range").val(range);
+             $( ".node-input-range" ).hide();
+             $( ".node-input-" + range ).show();
+         }
+
+         $( "#node-input-range").change(showRange);
+         
+     }
+ });
 </script>
 
 <script type="text/x-red" data-template-name="lfo-node">
-    <div class="form-row">
-        <label for="node-input-waveform" style="width: 120px;"><i class="fa fa-music"></i> Waveform</label>
-        <select id="node-input-waveform" style="width:125px !important">
-            <option value="sine">Sine</option>
-            <option value="saw">Saw</option>
-            <option value="saw_i">Inverted Saw</option>
-            <option value="triangle">Triangle</option>
-            <option value="square">Square</option>
-            <option value="sig">Sigmoid</option>
-        </select>
-    </div>
-    <div class="form-row">
-        <label for="node-input-frequency" style="width: 120px;"><i class="fa fa-clock-o"></i> Frequency</label>
-        <input type="text" id="node-input-frequency" placeholder="Hz" style="text-align:end; width:50px !important">
-        <span>Hertz</span>
-    </div>
-    <div class="form-row">
-        <label for="node-input-samplingrate" style="width: 120px;"><i class="fa fa-clock-o"></i> Sampling rate</label>
-        <input type="text" id="node-input-samplingrate" placeholder="ms" style="text-align:end; width:50px !important">
-        <span>Milisecond(s)</span>
-    </div>
+  <div class="form-row">
+    <label for="node-input-waveform" style="width: 120px;"><i class="fa fa-music"></i> Waveform</label>
+    <select id="node-input-waveform" style="width:125px !important">
+      <option value="sine">Sine</option>
+      <option value="saw">Saw</option>
+      <option value="saw_i">Inverted Saw</option>
+      <option value="triangle">Triangle</option>
+      <option value="square">Square</option>
+      <option value="sig">Sigmoid</option>
+    </select>
+  </div>
+  
+  <div class="form-row">
+    <label for="node-input-frequency" style="width: 120px;"><i class="fa fa-clock-o"></i> Frequency</label>
+    <input type="number" id="node-input-frequency" min="0" placeholder="Hz" style="text-align:end; width:50px !important">
+    <span>Hertz</span>
+  </div>
+  
+  <div class="form-row">
+    <label for="node-input-samplingrate" style="width: 120px;"><i class="fa fa-clock-o"></i> Sampling rate</label>
+    <input type="number" id="node-input-samplingrate" min="1" placeholder="ms" style="text-align:end; width:50px !important">
+    <span>Milisecond(s)</span>
+  </div>
 
-    <div class="form-row">
-        <label for="node-input-name" style="width: 120px;"><i class="icon-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
-    </div>
+ 
+ <div class="form-row">
+   <label for="node-input-range" style="width: 120px;"><i class="fa fa-sliders"></i> Output range</label>
+   <select id="node-input-range">
+     <option value='offsetamplitude'>Offset/amplitude</option>
+     <option value='minmax'>Minimum/maximum</option>
+   </select>
+ </div>
+ 
+ <div class="form-row node-input-range node-input-offsetamplitude">
+   <label for="node-input-offset" style="width: 120px;">Offset </label>
+   <input type="number" id="node-input-offset" placeholder="0"  style="text-align:end; width:50px !important">
+ </div>
+ 
+ <div class="form-row node-input-range node-input-offsetamplitude">
+   <label for="node-input-amplitude" style="width: 120px;">Amplitude </label>
+   <input type="number" id="node-input-amplitude" min="0" placeholder="1"  style="text-align:end; width:50px !important">
+ </div>
+ 
+ <div class="form-row node-input-range node-input-minmax" >
+   <label for="node-input-min" style="width: 120px;">Minimum </label>
+   <input type="number" id="node-input-min" placeholder="-1"  style="text-align:end; width:50px !important">
+ </div>
+ 
+ <div class="form-row node-input-range node-input-minmax" >
+   <label for="node-input-max" style="width: 120px;">Maximum </label>
+   <input type="number" id="node-input-max" placeholder="1"  style="text-align:end; width:50px !important">
+ </div>
+ 
+ <div class="form-row">
+   <label for="node-input-name" style="width: 120px;"><i class="icon-tag"></i> Name</label>
+   <input type="text" id="node-input-name" placeholder="Name">
+ </div>
 </script>
 
 <script type="text/x-red" data-help-name="lfo-node">
