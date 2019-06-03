@@ -32,6 +32,7 @@
 
          function showRange(){
              var range = this.value || node.range || "offsetamplitude";
+             console.log('show range with ' + range);
              $( "#node-input-range").val(range);
              $( ".node-input-range" ).hide();
              $( ".node-input-" + range ).show();
