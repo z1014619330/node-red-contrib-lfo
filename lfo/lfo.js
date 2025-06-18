@@ -2,31 +2,24 @@ module.exports = function (RED) {
     function LFONode (config) {
         const osc = require('oscillators');
         const clock = require('since-when');
-        const nrc = require('../../node-red-contrib-configure/node-red-configure');
 
         RED.nodes.createNode(this, config);
         var node = this;
         node.lfo = null;
 
+        // 初始化配置
+        node.name = config.name || "";
+        node.waveform = config.waveform || "sine";
+        node.frequency = config.frequency || 1;
+        node.samplingrate = config.samplingrate || 20;
+        node.range = config.range || "offsetamplitude";
+        node.offset = config.offset || 0;
+        node.amplitude = config.amplitude || 1;
+        node.min = config.min || -1;
+        node.max = config.max || 1;
 
-        let configuration = new nrc.NodeRedConfigure(node, config,
-            {
-                name: {value:""},
-                waveform: {value: "sine"},
-                frequency: {value: 1},
-                samplingrate: {value: 20},
-                range: {value: "offsetamplitude"},
-                offset: {value: 0},
-                amplitude: {value: 1},
-                min: {value: -1},
-                max: {value: 1}
-            });
-
-        configuration.handle(setWaveform, 'waveform');
-        setWaveform(config.waveform || 'sine');
-        configuration.postHandle(setScale);
-        configuration.postHandle(function (){ node.range = 'minmax'; setScale();}, ['min', 'max']);
-        configuration.postHandle(function (){ node.range = 'offsetamplitude'; setScale();}, ['offset', 'amplitude']);
+        // 设置初始波形
+        setWaveform(node.waveform);
         setScale();
         
         node.on('input', function (msg) {
@@ -34,7 +27,37 @@ module.exports = function (RED) {
                 msg.topic = 'frequency';
             }
 
-            configuration.input(msg);
+            // 处理配置更新
+            if (msg.topic) {
+                switch(msg.topic.toLowerCase()) {
+                    case 'frequency':
+                        node.frequency = firstNumber(msg.payload, node.frequency);
+                        break;
+                    case 'waveform':
+                        setWaveform(msg.payload);
+                        break;
+                    case 'offset':
+                        node.offset = firstNumber(msg.payload, node.offset);
+                        node.range = 'offsetamplitude';
+                        setScale();
+                        break;
+                    case 'amplitude':
+                        node.amplitude = firstNumber(msg.payload, node.amplitude);
+                        node.range = 'offsetamplitude';
+                        setScale();
+                        break;
+                    case 'min':
+                        node.min = firstNumber(msg.payload, node.min);
+                        node.range = 'minmax';
+                        setScale();
+                        break;
+                    case 'max':
+                        node.max = firstNumber(msg.payload, node.max);
+                        node.range = 'minmax';
+                        setScale();
+                        break;
+                }
+            }
 
             if (msg.payload === 'stop') {
                 if (node.lfo) {
@@ -44,7 +67,7 @@ module.exports = function (RED) {
                 return;
             }
 
-            if (msg.payload ==='start' && !node.lfo) {
+            if (msg.payload === 'start' && !node.lfo) {
                 node.time = new clock();
                 node.lfo = setInterval(function () {
                     if (!(node.oscillator instanceof Function)) {
@@ -82,13 +105,10 @@ module.exports = function (RED) {
         }
 
         function setScale () {
-            if (!node.range) {
-                node.range = config.range;
-            }
             switch (node.range) {
             case 'minmax':
                 node.min = firstNumber(node.min, config.min, -1);
-                node.max = firstNumber(node.max, config.max, 1); ;
+                node.max = firstNumber(node.max, config.max, 1);
 
                 node.offset_ = (node.min + node.max) / 2;
                 node.amplitude_ = node.max - node.offset_;
